@@ -12,46 +12,84 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 
+import org.xml.sax.HandlerBase;
+
 public class JDBCTest {
 
-	
-	
-	public static void testPreparedStatement() throws Exception{
-	    String sql = "INSERT INTO flowerdemo (address,temp,humid) values(?,?,?)";
-		
+	public static <T> T get(Class<T> clazz, String sql, Object... args)
+			throws Exception {
+		T entity = null;
+
+		Connection conn = getConnection();
+		PreparedStatement pst = conn.prepareStatement(sql);
+
+		Map<String, Object> values = new HashMap<String, Object>();
+
+		for (int i = 0; i < args.length; i++) {
+			pst.setObject(i + 1, args[i]);
+		}
+		ResultSet rs = pst.executeQuery();
+		ResultSetMetaData rsmd = rs.getMetaData();
+
+		while (rs.next()) {
+
+			for (int i = 0; i < rsmd.getColumnCount(); i++) {
+				String columLable = rsmd.getColumnLabel(i + 1);
+				Object columnValue = rs.getObject(columLable);
+				values.put(columLable, columnValue);
+			}
+		}
+
+		System.out.println(values);
+		if (values.size() > 0) {
+			entity = clazz.newInstance();
+
+			for (Map.Entry<String, Object> entry : values.entrySet()) {
+				String fieldName = entry.getKey();
+				Object fieldValue = entry.getValue();
+				ReflectionUtils.setFieldValue(entity, fieldName, fieldValue);
+			}
+		}
+		System.out.println(entity);
+		return entity;
+	}
+
+	public static void testPreparedStatement() throws Exception {
+		String sql = "INSERT INTO flowerdemo (address,temp,humid) values(?,?,?)";
+
 		Connection conn = getConnection();
 		PreparedStatement pst = conn.prepareStatement(sql);
 		pst.setString(1, "192.168.1.1");
 		pst.setInt(2, 55);
 		pst.setInt(3, 66);
 		pst.executeUpdate();
-		
+
 		stopConnection(null, conn, pst);
-		
+
 	}
-	
-	
-	public static void addDevice(Device device) throws Exception{
+
+	public static void addDevice(Device device) throws Exception {
 
 		String sql = "INSERT INTO flowerdemo (address,temp,humid) values(?,?,?);";
-		
-		update(sql,device.getAddress(),device.getTemp(),device.getHumid());
-		
+
+		update(sql, device.getAddress(), device.getTemp(), device.getHumid());
+
 	}
-	
-	
-	public static void testAddNewDevice() throws Exception{
-	
+
+	public static void testAddNewDevice() throws Exception {
+
 		Device device = getDeviceFromConsole();
 		addDevice(device);
 	}
-	
-	
+
 	public static Device getDeviceFromConsole() {
 
 		Scanner scanner = new Scanner(System.in);
@@ -67,23 +105,22 @@ public class JDBCTest {
 		System.out.print("humid:");
 		device.setHumid(scanner.nextInt());
 
-
 		return device;
 	}
-	
-	public static void testResultSet() throws Exception{
-	
+
+	public static void testResultSet() throws Exception {
+
 		Connection conn = getConnection();
 		Statement statement = conn.createStatement();
-		String sql ="SELECT address,temp,humid FROM flowerdemo;";
-		
+		String sql = "SELECT address,temp,humid FROM flowerdemo;";
+
 		ResultSet rs = statement.executeQuery(sql);
-		
-		while(rs.next()){
+
+		while (rs.next()) {
 			String address = rs.getString(1);
 			int temp = rs.getInt(2);
 			int humid = rs.getInt(3);
-			
+
 			System.out.println(address);
 			System.out.println(temp);
 			System.out.println(humid);
@@ -92,8 +129,7 @@ public class JDBCTest {
 		statement.close();
 		conn.close();
 	}
-	
-	
+
 	public static Connection getConnection() throws Exception {
 		Properties properties = new Properties();
 
@@ -111,18 +147,17 @@ public class JDBCTest {
 		return DriverManager.getConnection(jdbcUrl, user, password);
 	}
 
-	
-	public static void update(String sql,Object ...args) throws Exception{
-		
+	public static void update(String sql, Object... args) throws Exception {
+
 		Connection conn = getConnection();
 		PreparedStatement pst = conn.prepareStatement(sql);
-		
-		for(int i = 0;i<args.length;i++){
-			pst.setObject(i+1, args[i]);
+
+		for (int i = 0; i < args.length; i++) {
+			pst.setObject(i + 1, args[i]);
 		}
-		
+
 		pst.executeUpdate();
-		
+
 		stopConnection(null, conn, pst);
 	}
 

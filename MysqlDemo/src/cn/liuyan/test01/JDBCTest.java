@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Scanner;
 
-import org.xml.sax.HandlerBase;
+import org.apache.commons.beanutils.BeanUtils;
 
 public class JDBCTest {
 
@@ -55,7 +55,8 @@ public class JDBCTest {
 			for (Map.Entry<String, Object> entry : values.entrySet()) {
 				String fieldName = entry.getKey();
 				Object fieldValue = entry.getValue();
-				ReflectionUtils.setFieldValue(entity, fieldName, fieldValue);
+//				ReflectionUtils.setFieldValue(entity, fieldName, fieldValue);
+				BeanUtils.setProperty(entity, fieldName, fieldValue);
 			}
 		}
 		System.out.println(entity);
@@ -169,7 +170,6 @@ public class JDBCTest {
 			try {
 				rs.close();
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
@@ -180,7 +180,6 @@ public class JDBCTest {
 			try {
 				pstm.close();
 			} catch (SQLException e) {
-				// TODO Auto-generated catch block
 				e.printStackTrace();
 			}
 
@@ -193,13 +192,11 @@ public class JDBCTest {
 				try {
 					con.close();
 				} catch (SQLException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 
 			}
 		} catch (SQLException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}

@@ -1,19 +1,28 @@
 package adf;
 
 import java.io.BufferedReader;
-import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
 import java.net.Socket;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+
+import cn.liuyan.test01.JDBCTest;
 
 public class Client extends Thread {
 	String name;
 	Socket socket;
 	BufferedReader in;
 	PrintWriter out;
+
+	Connection conn = null;
+	PreparedStatement pst = null;
+	ResultSet rs = null;
+	String sql = null;
 
 	public Client(Socket socket) {
 		this.socket = socket;
@@ -24,7 +33,6 @@ public class Client extends Thread {
 			this.out = new PrintWriter(new OutputStreamWriter(
 					socket.getOutputStream()));
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
@@ -32,12 +40,14 @@ public class Client extends Thread {
 	public void run() {
 		boolean isLoop = false;
 		String nm;
+		System.out.println("开始读取数据");
 		try {
 			nm = in.readLine();
 			name = nm;
+
+			System.out.println(name);
 			isLoop = true;
 		} catch (IOException e1) {
-			// TODO Auto-generated catch block
 			e1.printStackTrace();
 		}
 
@@ -57,27 +67,54 @@ public class Client extends Thread {
 					return;
 				} else {
 					for (int i = 0; i < Server_2002_8888.clients.size(); i++) {
-						if (this.name
-								.equals(Server_2002_8888.clients.get(i).name)) {
-							Server_2002_8888.clients.get(i).out
-									.println(this.name + ":"
-											+ socket.getInetAddress() + "-->"
-											+ msg);
+						if (this.name.equals(Server_2002_8888.clients.get(i).name)) {
+
+							switch (msg){
+							//接受设备更改状态请求，00为关闭
+							case "[ZZZ 00]":
+								Test.update("UPDATE mac SET temp = 0 WHERE mac_address = ?",name);
+								break;
+							//接受设备更改状态请求，01为开启
+							case "[ZZZ 01]":
+								Test.update("UPDATE mac SET temp = 1 WHERE mac_address = ?",name);
+								break;
+							//接受手机端查询请求
+							case "{ZZZ}":
+								msg = Test.query("SELECT temp from mac WHERE mac_address = ?",name);
+								Server_2002_8888.clients.get(i).out.println(this.name + ":"
+										+ socket.getInetAddress() + "-->"
+										+ msg);
+								break;
+							//接受手机端更改，00为关闭，01为开启
+							case "{ZZZ 0}":
+								Server_2002_8888.clients.get(i).out.println(this.name + ":"
+										+ socket.getInetAddress() + "-->"
+										+ msg);
+								break;
+								
+							case "{ZZZ 1}":
+								Server_2002_8888.clients.get(i).out.println(this.name + ":"
+										+ socket.getInetAddress() + "-->"
+										+ msg);
+								break;
+							}
+							
 							out.flush();
 							Server_2002_8888.clients.get(i).out.flush();
 						}
 					}
 				}
 			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				// in.close();
+//				 in.close();
 				out.close();
 				Server_2002_8888.clients.remove(this);
 				e.printStackTrace();
 
 				break;
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-
+			
 		}
 	}
 

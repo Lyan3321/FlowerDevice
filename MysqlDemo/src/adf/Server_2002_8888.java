@@ -15,6 +15,7 @@ public class Server_2002_8888 {
 		while (true) {
 			Socket socket = ss.accept();
 			Client c = new Client(socket);
+
 			Server_2002_8888.clients.add(c);
 			c.start();
 		}

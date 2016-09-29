@@ -24,6 +24,51 @@ import org.apache.commons.beanutils.BeanUtils;
 
 public class JDBCTest {
 
+	public static <T> T get1(Class<T> clazz, String sql, Object... args) {
+		T entity = null;
+		Connection conn = null;
+		PreparedStatement pst = null;
+		ResultSet rs = null;
+
+		try {
+			conn = getConnection();
+			pst = conn.prepareStatement(sql);
+
+			for (int i = 0; i < args.length; i++) {
+				pst.setObject(i + 1, args[i]);
+			}
+
+			rs = pst.executeQuery();
+			ResultSetMetaData rsmd = rs.getMetaData();
+			Map<String, Object> values = new HashMap<String, Object>();
+
+			while (rs.next()) {
+				for (int i = 0; i < rsmd.getColumnCount(); i++) {
+					String columnLable = rsmd.getColumnLabel(i + 1);
+					Object columnValue = rs.getObject(columnLable);
+
+					values.put(columnLable, columnValue);
+				}
+			}
+			if (values.size() > 0) {
+				entity = clazz.newInstance();
+
+				for (Map.Entry<String, Object> entry : values.entrySet()) {
+					String key = entry.getKey();
+					Object value = entry.getValue();
+					BeanUtils.setProperty(entity, key, value);
+				}
+			}
+
+		} catch (Exception e) {
+		}
+
+		stopConnection(rs, conn, pst);
+		System.out.println(entity);
+		return entity;
+
+	}
+
 	public static <T> T get(Class<T> clazz, String sql, Object... args)
 			throws Exception {
 		T entity = null;
@@ -55,7 +100,7 @@ public class JDBCTest {
 			for (Map.Entry<String, Object> entry : values.entrySet()) {
 				String fieldName = entry.getKey();
 				Object fieldValue = entry.getValue();
-//				ReflectionUtils.setFieldValue(entity, fieldName, fieldValue);
+				// ReflectionUtils.setFieldValue(entity, fieldName, fieldValue);
 				BeanUtils.setProperty(entity, fieldName, fieldValue);
 			}
 		}
